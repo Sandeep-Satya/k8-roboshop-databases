@@ -1,0 +1,107 @@
+# service, headless service, statefulset, pvc
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: roboshop
+spec:
+  selector:
+    project: roboshop
+    component: redis
+    tier: db
+  ports:
+    - protocol: TCP
+      port: 6379 # service port
+      targetPort: 6379 # container port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-headless
+  namespace: roboshop
+spec:
+  clusterIP: None
+  selector:
+    project: roboshop
+    component: redis
+    tier: db
+  ports:
+    - protocol: TCP
+      port: 6379 # service port
+      targetPort: 6379 # container port
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: roboshop
+spec:
+  selector:
+    matchLabels:
+      project: roboshop
+      component: redis
+      tier: db
+  serviceName: "redis-headless" # this should be head less service name
+  replicas: 2 # by default is 1
+  template:
+    metadata:
+      labels:
+        project: roboshop
+        component: redis
+        tier: db
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.0
+        volumeMounts:
+        - name: redis
+          mountPath: /data
+  # This is PVC
+  volumeClaimTemplates:
+  - metadata:
+      name: redis
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "roboshop-ebs"
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogue
+  namespace: roboshop
+spec:
+  selector:
+    project: roboshop
+    component: catalogue
+    tier: backend
+  ports:
+    - protocol: TCP
+      port: 8080 # service port
+      targetPort: 8080 # container port
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: redis
+  namespace: roboshop
+  labels:
+    project: roboshop
+    component: redis
+    tier: db
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: redis
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 5 # 70 is the real value
