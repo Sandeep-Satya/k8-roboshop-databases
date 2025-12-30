@@ -82,26 +82,26 @@ spec:
       port: 8080 # service port
       targetPort: 8080 # container port
 ---
-# apiVersion: autoscaling/v2
-# kind: HorizontalPodAutoscaler
-# metadata:
-#   name: mongodb
-#   namespace: roboshop
-#   labels:
-#     project: roboshop
-#     component: mongodb
-#     tier: db
-# spec:
-#   scaleTargetRef:
-#     apiVersion: apps/v1
-#     kind: Deployment
-#     name: mongodb
-#   minReplicas: 1
-#   maxReplicas: 10
-#   metrics:
-#   - type: Resource
-#     resource:
-#       name: cpu
-#       target:
-#         type: Utilization
-#         averageUtilization: 5 # 70 is the real value
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mongodb
+  namespace: roboshop
+  labels:
+    project: roboshop
+    component: mongodb
+    tier: db
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mongodb
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 5 # 70 is the real value
